@@ -1,0 +1,18 @@
+In the Global Quality Management System (GQMS) project,
+ you enhanced React.js components to facilitate document retrieval, including policies, work instructions, and procedures. By implementing filters such as document name, type, 
+and location, you made document searches more efficient.
+
+In the Device Implant Query (DIQ) project, you developed 
+functionality to retrieve patient details based on device ID,
+ last name, or date of birth. Your work included implementing 
+search functionality to display all devices associated with a 
+patient based on their last name
+ and streamlining device-specific details retrieval 
+using device ID searches.
+
+n the Physician Collaboration Initiative (PCI) project, 
+you established a comprehensive system to track courses
+ and trainings for users. 
+You managed speaker information and eligibility for 
+lectures and implemented a robust financial tracking system for 
+lecture-related expenses.
