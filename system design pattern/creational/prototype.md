@@ -146,4 +146,152 @@ Drawing Circle at (50,60)
 
 ---
 
-👉 Do you want me to also show you the **Shallow Copy vs Deep Copy** difference with Prototype in Java? That’s a common interview follow-up question.
+Perfect 👍 Let’s go deeper into **Prototype Pattern** with **Shallow Copy vs Deep Copy** in Java, because this is a very common interview question.
+
+---
+
+# 🔹 1. Shallow Copy vs Deep Copy
+
+| Feature        | Shallow Copy                                                                     | Deep Copy                                                                  |
+| -------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Definition** | Copies only object references (nested objects are **shared**).                   | Copies the object **and all its nested objects**.                          |
+| **Memory**     | Original and copy share the same inner objects → changing one affects the other. | Each copy has its **own copy of nested objects** → completely independent. |
+| **Speed**      | Faster (just copies references).                                                 | Slower (creates full new objects).                                         |
+| **Use case**   | When nested objects are immutable or don’t change.                               | When independent copies are needed.                                        |
+
+---
+
+# 🔹 2. Example: Shallow Copy
+
+```java
+class Address {
+    String city;
+
+    public Address(String city) {
+        this.city = city;
+    }
+}
+
+class PersonShallow implements Cloneable {
+    String name;
+    Address address;
+
+    public PersonShallow(String name, Address address) {
+        this.name = name;
+        this.address = address;
+    }
+
+    // Shallow copy (default clone)
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone(); 
+    }
+}
+
+public class ShallowCopyDemo {
+    public static void main(String[] args) throws CloneNotSupportedException {
+        Address address = new Address("Delhi");
+        PersonShallow p1 = new PersonShallow("Shubham", address);
+
+        // Shallow copy
+        PersonShallow p2 = (PersonShallow) p1.clone();
+
+        System.out.println("Before change: p1 city = " + p1.address.city + ", p2 city = " + p2.address.city);
+
+        // Change city in p2 → also affects p1 (shared reference!)
+        p2.address.city = "Mumbai";
+
+        System.out.println("After change: p1 city = " + p1.address.city + ", p2 city = " + p2.address.city);
+    }
+}
+```
+
+### ✅ Output
+
+```
+Before change: p1 city = Delhi, p2 city = Delhi
+After change: p1 city = Mumbai, p2 city = Mumbai
+```
+
+👉 Both objects share the same `Address` reference.
+
+---
+
+# 🔹 3. Example: Deep Copy
+
+```java
+class AddressDeep {
+    String city;
+
+    public AddressDeep(String city) {
+        this.city = city;
+    }
+}
+
+class PersonDeep implements Cloneable {
+    String name;
+    AddressDeep address;
+
+    public PersonDeep(String name, AddressDeep address) {
+        this.name = name;
+        this.address = address;
+    }
+
+    // Deep copy (manually clone inner object)
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        PersonDeep cloned = (PersonDeep) super.clone();
+        cloned.address = new AddressDeep(this.address.city); // new copy of Address
+        return cloned;
+    }
+}
+
+public class DeepCopyDemo {
+    public static void main(String[] args) throws CloneNotSupportedException {
+        AddressDeep address = new AddressDeep("Delhi");
+        PersonDeep p1 = new PersonDeep("Shubham", address);
+
+        // Deep copy
+        PersonDeep p2 = (PersonDeep) p1.clone();
+
+        System.out.println("Before change: p1 city = " + p1.address.city + ", p2 city = " + p2.address.city);
+
+        // Change city in p2 → does NOT affect p1
+        p2.address.city = "Mumbai";
+
+        System.out.println("After change: p1 city = " + p1.address.city + ", p2 city = " + p2.address.city);
+    }
+}
+```
+
+### ✅ Output
+
+```
+Before change: p1 city = Delhi, p2 city = Delhi
+After change: p1 city = Delhi, p2 city = Mumbai
+```
+
+👉 Each object has its own copy of `Address`.
+
+---
+
+# 🔹 4. Key Takeaways for Interviews
+
+* **Shallow copy**: copies references → nested objects are shared.
+* **Deep copy**: copies everything → nested objects are cloned too.
+* In Java, `Object.clone()` by default gives **shallow copy**.
+* To make **deep copy**, we must override `clone()` and manually copy nested objects.
+* **Prototype pattern** often requires **deep copy** if independent objects are needed.
+
+---
+
+✅ Summary:
+
+* **Prototype = cloning existing objects.**
+* **Shallow Copy** → faster, but shares nested references.
+* **Deep Copy** → independent, safer, but slower.
+
+---
+
+Do you want me to also show **how Prototype is implemented in real frameworks (like Spring’s `@Scope("prototype")`)** with an example?
+
