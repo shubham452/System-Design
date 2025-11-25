@@ -1,0 +1,26 @@
+https://blog.algomaster.io/p/design-a-url-shortener
+1. Requirements Gathering
+Before diving into the design, lets outline the functional and non-functional requirements.
+
+1.1 Functional Requirements:
+Generate a unique short URL for a given long URL
+
+Redirect the user to the original URL when the short URL is accessed
+
+Allow users to customize their short URLs (optional)
+
+Support link expiration where URLs are no longer accessible after a certain period
+
+Provide analytics on link usage (optional)
+
+1.2 Non-Functional Requirements:
+High availability (the service should be up 99.9% of the time)
+
+Low latency (url shortening and redirects should happen in milliseconds)
+
+Scalability (the system should handle millions of requests per day)
+
+Durability (shortened URLs should work for years)
+
+Security to prevent malicious use, such as phishing.
+
