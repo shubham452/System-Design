@@ -34,20 +34,20 @@ src/
             │   ├── SelectionState.java
             │   └── DispenseState.java
             │
-            └── utils/
-                └── ChangeCalculator.java
+           
 ```
 
+
+
+
 ---
 
-# ✅ FULL CODE
+### **Source Code Files**
 
----
-
-## ✅ `coin/Coin.java`
+#### 1. `Coin.java`
 
 ```java
-package com.lld.vendingmachine.coin;
+package vendingmachine;
 
 public enum Coin {
     PENNY(1),
@@ -55,624 +55,347 @@ public enum Coin {
     DIME(10),
     QUARTER(25);
 
-    public int value;
+    private int value;
 
     Coin(int value) {
         this.value = value;
     }
+
+    public int getValue() {
+        return value;
+    }
 }
+
 ```
 
----
-
-## ✅ `inventory/ProductType.java`
+#### 2. `Item.java`
 
 ```java
-package com.lld.vendingmachine.inventory;
-
-public enum ProductType {
-    COKE,
-    PEPSI,
-    JUICE,
-    SODA;
-}
-```
-
----
-
-## ✅ `inventory/Item.java`
-
-```java
-package com.lld.vendingmachine.inventory;
+package vendingmachine;
 
 public class Item {
-    private ProductType type;
+    private String name;
     private int price;
 
-    public Item(ProductType type, int price) {
-        this.type = type;
+    public Item(String name, int price) {
+        this.name = name;
         this.price = price;
-    }
-
-    public ProductType getType() {
-        return type;
     }
 
     public int getPrice() {
         return price;
     }
-}
-```
 
----
-
-## ✅ `inventory/ItemShelf.java`
-
-```java
-package com.lld.vendingmachine.inventory;
-
-public class ItemShelf {
-    private int code;
-    private Item item;
-    private int quantity;
-
-    public ItemShelf(int code, Item item, int quantity) {
-        this.code = code;
-        this.item = item;
-        this.quantity = quantity;
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public Item getItem() {
-        return item;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public boolean isSoldOut() {
-        return quantity == 0;
-    }
-
-    public void dispenseOne() throws Exception {
-        if (quantity == 0) {
-            throw new Exception("Item sold out");
-        }
-        quantity--;
+    public String getName() {
+        return name;
     }
 }
+
 ```
 
----
-
-## ✅ `inventory/Inventory.java`
+#### 3. `Inventory.java`
 
 ```java
-package com.lld.vendingmachine.inventory;
+package vendingmachine;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Inventory {
-    private ItemShelf[] inventory;
+    private Map<String, Integer> stockMap = new ConcurrentHashMap<>();
+    private Map<String, Item> itemMap = new ConcurrentHashMap<>();
 
-    public Inventory(int count) {
-        inventory = new ItemShelf[count];
-        initialSetup();
+    public void addItem(String code, Item item, int quantity) {
+        itemMap.put(code, item);
+        stockMap.put(code, quantity);
     }
 
-    public void initialSetup() {
-        // Codes: 101, 102, 103...
-        inventory[0] = new ItemShelf(101, new Item(ProductType.COKE, 25), 5);
-        inventory[1] = new ItemShelf(102, new Item(ProductType.PEPSI, 30), 3);
-        inventory[2] = new ItemShelf(103, new Item(ProductType.JUICE, 40), 2);
-        inventory[3] = new ItemShelf(104, new Item(ProductType.SODA, 35), 4);
+    public Item getItem(String code) {
+        return itemMap.get(code);
+    }
 
-        // Fill remaining with default items
-        for (int i = 4; i < inventory.length; i++) {
-            inventory[i] = new ItemShelf(101 + i, new Item(ProductType.COKE, 25), 2);
+    public synchronized void reduceStock(String code) {
+        int currentStock = stockMap.getOrDefault(code, 0);
+        if (currentStock > 0) {
+            stockMap.put(code, currentStock - 1);
         }
     }
 
-    public ItemShelf getShelf(int codeNumber) throws Exception {
-        for (ItemShelf shelf : inventory) {
-            if (shelf.getCode() == codeNumber) {
-                return shelf;
-            }
-        }
-        throw new Exception("Invalid Item Code");
-    }
-
-    public Item getItem(int codeNumber) throws Exception {
-        ItemShelf shelf = getShelf(codeNumber);
-
-        if (shelf.isSoldOut()) {
-            throw new Exception("Item already sold out");
-        }
-        return shelf.getItem();
-    }
-
-    public void dispenseItem(int codeNumber) throws Exception {
-        ItemShelf shelf = getShelf(codeNumber);
-        shelf.dispenseOne();
+    public boolean isAvailable(String code) {
+        return stockMap.getOrDefault(code, 0) > 0;
     }
 }
+
 ```
 
----
-
-## ✅ `utils/ChangeCalculator.java`
+#### 4. `VendingMachineState.java`
 
 ```java
-package com.lld.vendingmachine.utils;
+package vendingmachine;
 
-import com.lld.vendingmachine.coin.Coin;
-import java.util.ArrayList;
-import java.util.List;
+public interface VendingMachineState {
+    void insertCoin(Coin coin);
+    void selectItem(String code);
+    void dispense();
+    void refund();
+}
 
-public class ChangeCalculator {
+```
 
-    public static List<Coin> getChangeCoins(int amount) throws Exception {
-        List<Coin> change = new ArrayList<>();
+#### 5. `IdleState.java`
 
-        Coin[] coins = {Coin.QUARTER, Coin.DIME, Coin.NICKEL, Coin.PENNY};
+```java
+package vendingmachine;
 
-        for (Coin coin : coins) {
-            while (amount >= coin.value) {
-                amount -= coin.value;
-                change.add(coin);
-            }
+public class IdleState implements VendingMachineState {
+    private VendingMachine machine;
+
+    public IdleState(VendingMachine machine) {
+        this.machine = machine;
+    }
+
+    @Override
+    public void insertCoin(Coin coin) {
+        System.out.println("Coin inserted: " + coin);
+        machine.addBalance(coin.getValue());
+        machine.setState(machine.getHasMoneyState());
+    }
+
+    @Override
+    public void selectItem(String code) {
+        System.out.println("Please insert coins first.");
+    }
+
+    @Override
+    public void dispense() {
+        System.out.println("Payment required.");
+    }
+
+    @Override
+    public void refund() {
+        System.out.println("No money to refund.");
+    }
+}
+
+```
+
+#### 6. `HasMoneyState.java`
+
+```java
+package vendingmachine;
+
+public class HasMoneyState implements VendingMachineState {
+    private VendingMachine machine;
+
+    public HasMoneyState(VendingMachine machine) {
+        this.machine = machine;
+    }
+
+    @Override
+    public void insertCoin(Coin coin) {
+        System.out.println("Coin inserted: " + coin);
+        machine.addBalance(coin.getValue());
+    }
+
+    @Override
+    public void selectItem(String code) {
+        Inventory inventory = machine.getInventory();
+        if (!inventory.isAvailable(code)) {
+            System.out.println("Item out of stock.");
+            return;
         }
 
-        if (amount != 0) {
-            throw new Exception("Cannot return exact change");
+        Item item = inventory.getItem(code);
+        if (machine.getBalance() < item.getPrice()) {
+            System.out.println("Insufficient funds. Price: " + item.getPrice());
+            return;
         }
 
-        return change;
+        machine.setCurrentItem(item);
+        machine.setState(machine.getDispensingState());
+        machine.dispense();
+    }
+
+    @Override
+    public void dispense() {
+        System.out.println("Select item first.");
+    }
+
+    @Override
+    public void refund() {
+        System.out.println("Refunding: " + machine.getBalance());
+        machine.setBalance(0);
+        machine.setState(machine.getIdleState());
     }
 }
+
 ```
 
----
-
-## ✅ `states/State.java`
+#### 7. `DispensingState.java`
 
 ```java
-package com.lld.vendingmachine.states;
+package vendingmachine;
 
-import com.lld.vendingmachine.VendingMachine;
-import com.lld.vendingmachine.coin.Coin;
-import com.lld.vendingmachine.inventory.Item;
+public class DispensingState implements VendingMachineState {
+    private VendingMachine machine;
 
-import java.util.List;
-
-public interface State {
-    void clickInsertCoinButton(VendingMachine machine) throws Exception;
-    void insertCoin(VendingMachine machine, Coin coin) throws Exception;
-
-    void clickSelectProductButton(VendingMachine machine) throws Exception;
-    void selectProduct(VendingMachine machine, int codeNumber) throws Exception;
-
-    List<Coin> getChange(int returnMoney) throws Exception;
-    List<Coin> refundFullMoney(VendingMachine machine) throws Exception;
-
-    Item dispenseProduct(VendingMachine machine, int codeNumber) throws Exception;
-}
-```
-
----
-
-## ✅ `states/IdleState.java`
-
-```java
-package com.lld.vendingmachine.states;
-
-import com.lld.vendingmachine.VendingMachine;
-import com.lld.vendingmachine.coin.Coin;
-import com.lld.vendingmachine.inventory.Item;
-
-import java.util.List;
-
-public class IdleState implements State {
-
-    public IdleState() {
-        System.out.println("--- State: IDLE ---");
+    public DispensingState(VendingMachine machine) {
+        this.machine = machine;
     }
 
     @Override
-    public void clickInsertCoinButton(VendingMachine machine) throws Exception {
-        machine.setCurrentState(new HasMoneyState());
+    public void insertCoin(Coin coin) {
+        System.out.println("Please wait, dispensing...");
     }
 
     @Override
-    public void insertCoin(VendingMachine machine, Coin coin) throws Exception {
-        throw new Exception("You must click insert coin button first");
+    public void selectItem(String code) {
+        System.out.println("Please wait, dispensing...");
     }
 
     @Override
-    public void clickSelectProductButton(VendingMachine machine) throws Exception {
-        throw new Exception("First insert coin");
-    }
+    public void dispense() {
+        Item item = machine.getCurrentItem();
+        Inventory inventory = machine.getInventory();
 
-    @Override
-    public void selectProduct(VendingMachine machine, int codeNumber) throws Exception {
-        throw new Exception("First insert coin");
-    }
+        inventory.reduceStock(item.getName());
 
-    @Override
-    public List<Coin> getChange(int returnMoney) throws Exception {
-        throw new Exception("No change in idle state");
-    }
+        int change = machine.getBalance() - item.getPrice();
+        machine.setBalance(0);
 
-    @Override
-    public List<Coin> refundFullMoney(VendingMachine machine) throws Exception {
-        throw new Exception("No money to refund");
-    }
-
-    @Override
-    public Item dispenseProduct(VendingMachine machine, int codeNumber) throws Exception {
-        throw new Exception("Product not chosen");
-    }
-}
-```
-
----
-
-## ✅ `states/HasMoneyState.java`
-
-```java
-package com.lld.vendingmachine.states;
-
-import com.lld.vendingmachine.VendingMachine;
-import com.lld.vendingmachine.coin.Coin;
-import com.lld.vendingmachine.inventory.Item;
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class HasMoneyState implements State {
-
-    public HasMoneyState() {
-        System.out.println("--- State: HAS_MONEY ---");
-    }
-
-    @Override
-    public void clickInsertCoinButton(VendingMachine machine) throws Exception {
-        return;
-    }
-
-    @Override
-    public void insertCoin(VendingMachine machine, Coin coin) throws Exception {
-        System.out.println("Accepted coin: " + coin.name());
-        machine.getCoinList().add(coin);
-    }
-
-    @Override
-    public void clickSelectProductButton(VendingMachine machine) throws Exception {
-        machine.setCurrentState(new SelectionState());
-    }
-
-    @Override
-    public void selectProduct(VendingMachine machine, int codeNumber) throws Exception {
-        throw new Exception("You need to click on select product button first");
-    }
-
-    @Override
-    public List<Coin> refundFullMoney(VendingMachine machine) throws Exception {
-        System.out.println("Returning full amount back to user");
-
-        List<Coin> refund = new ArrayList<>(machine.getCoinList());
-        machine.setCoinList(new ArrayList<>());
-
-        machine.setCurrentState(new IdleState());
-        return refund;
-    }
-
-    @Override
-    public List<Coin> getChange(int returnMoney) throws Exception {
-        throw new Exception("You need to select product first");
-    }
-
-    @Override
-    public Item dispenseProduct(VendingMachine machine, int codeNumber) throws Exception {
-        throw new Exception("Product not chosen");
-    }
-}
-```
-
----
-
-## ✅ `states/SelectionState.java`
-
-```java
-package com.lld.vendingmachine.states;
-
-import com.lld.vendingmachine.VendingMachine;
-import com.lld.vendingmachine.coin.Coin;
-import com.lld.vendingmachine.inventory.Item;
-import com.lld.vendingmachine.utils.ChangeCalculator;
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class SelectionState implements State {
-
-    public SelectionState() {
-        System.out.println("--- State: SELECTION ---");
-    }
-
-    @Override
-    public void clickInsertCoinButton(VendingMachine machine) throws Exception {
-        throw new Exception("You cannot insert Coin in selection state");
-    }
-
-    @Override
-    public void insertCoin(VendingMachine machine, Coin coin) throws Exception {
-        throw new Exception("You cannot insert Coin in selection state");
-    }
-
-    @Override
-    public void clickSelectProductButton(VendingMachine machine) throws Exception {
-        return;
-    }
-
-    @Override
-    public void selectProduct(VendingMachine machine, int codeNumber) throws Exception {
-        Item item = machine.getInventory().getItem(codeNumber);
-
-        int paidByUser = 0;
-        for (Coin c : machine.getCoinList()) {
-            paidByUser += c.value;
+        System.out.println("Dispensing " + item.getName());
+        if (change > 0) {
+            System.out.println("Returning change: " + change);
         }
 
-        System.out.println("Selected: " + item.getType() + " | Price: " + item.getPrice());
-        System.out.println("Paid by user: " + paidByUser);
-
-        if (paidByUser < item.getPrice()) {
-            System.out.println("Insufficient funds!");
-            refundFullMoney(machine);
-            throw new Exception("Insufficient Funds");
-        }
-
-        if (paidByUser > item.getPrice()) {
-            int changeAmount = paidByUser - item.getPrice();
-            List<Coin> changeCoins = getChange(changeAmount);
-            System.out.println("Returned change coins: " + changeCoins);
-        }
-
-        machine.setCurrentState(new DispenseState(machine, codeNumber));
+        machine.setState(machine.getIdleState());
     }
 
     @Override
-    public List<Coin> getChange(int returnMoney) throws Exception {
-        return ChangeCalculator.getChangeCoins(returnMoney);
-    }
-
-    @Override
-    public List<Coin> refundFullMoney(VendingMachine machine) throws Exception {
-        System.out.println("Returned full amount back in Coin Dispatch Tray");
-
-        List<Coin> refund = new ArrayList<>(machine.getCoinList());
-        machine.setCoinList(new ArrayList<>());
-
-        machine.setCurrentState(new IdleState());
-        return refund;
-    }
-
-    @Override
-    public Item dispenseProduct(VendingMachine machine, int codeNumber) throws Exception {
-        throw new Exception("Product not selected yet");
+    public void refund() {
+        System.out.println("Cannot refund during dispensing.");
     }
 }
+
 ```
 
----
-
-## ✅ `states/DispenseState.java`
+#### 8. `VendingMachine.java`
 
 ```java
-package com.lld.vendingmachine.states;
-
-import com.lld.vendingmachine.VendingMachine;
-import com.lld.vendingmachine.coin.Coin;
-import com.lld.vendingmachine.inventory.Item;
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class DispenseState implements State {
-
-    public DispenseState(VendingMachine machine, int codeNumber) throws Exception {
-        System.out.println("--- State: DISPENSE ---");
-        dispenseProduct(machine, codeNumber);
-    }
-
-    @Override
-    public void clickInsertCoinButton(VendingMachine machine) throws Exception {
-        throw new Exception("Dispense state cannot allow insert coin");
-    }
-
-    @Override
-    public void insertCoin(VendingMachine machine, Coin coin) throws Exception {
-        throw new Exception("Dispense state cannot allow insert coin");
-    }
-
-    @Override
-    public void clickSelectProductButton(VendingMachine machine) throws Exception {
-        throw new Exception("Dispense state cannot allow select product");
-    }
-
-    @Override
-    public void selectProduct(VendingMachine machine, int codeNumber) throws Exception {
-        throw new Exception("Dispense state cannot allow select product");
-    }
-
-    @Override
-    public List<Coin> getChange(int returnMoney) throws Exception {
-        throw new Exception("Dispense state cannot allow change calculation");
-    }
-
-    @Override
-    public List<Coin> refundFullMoney(VendingMachine machine) throws Exception {
-        throw new Exception("Dispense state cannot allow refund");
-    }
-
-    @Override
-    public Item dispenseProduct(VendingMachine machine, int codeNumber) throws Exception {
-        Item item = machine.getInventory().getItem(codeNumber);
-
-        machine.getInventory().dispenseItem(codeNumber);
-
-        System.out.println("Product dispensed: " + item.getType() + " (Code " + codeNumber + ")");
-
-        // Reset machine
-        machine.setCoinList(new ArrayList<>());
-        machine.setCurrentState(new IdleState());
-
-        return item;
-    }
-}
-```
-
----
-
-## ✅ `VendingMachine.java`
-
-```java
-package com.lld.vendingmachine;
-
-import com.lld.vendingmachine.coin.Coin;
-import com.lld.vendingmachine.inventory.Inventory;
-import com.lld.vendingmachine.states.IdleState;
-import com.lld.vendingmachine.states.State;
-
-import java.util.ArrayList;
-import java.util.List;
+package vendingmachine;
 
 public class VendingMachine {
-
-    private State currentState;
+    private static VendingMachine instance;
     private Inventory inventory;
-    private List<Coin> coinList;
+    private VendingMachineState idleState;
+    private VendingMachineState hasMoneyState;
+    private VendingMachineState dispensingState;
+    private VendingMachineState currentState;
+    private int balance;
+    private Item currentItem;
 
-    public VendingMachine() {
-        currentState = new IdleState();
-        inventory = new Inventory(10);
-        coinList = new ArrayList<>();
+    private VendingMachine() {
+        inventory = new Inventory();
+        idleState = new IdleState(this);
+        hasMoneyState = new HasMoneyState(this);
+        dispensingState = new DispensingState(this);
+        currentState = idleState;
+        balance = 0;
     }
 
-    public State getCurrentState() {
-        return currentState;
+    public static VendingMachine getInstance() {
+        if (instance == null) {
+            synchronized (VendingMachine.class) {
+                if (instance == null) {
+                    instance = new VendingMachine();
+                }
+            }
+        }
+        return instance;
     }
 
-    public void setCurrentState(State currentState) {
-        this.currentState = currentState;
+    public synchronized void insertCoin(Coin coin) {
+        currentState.insertCoin(coin);
+    }
+
+    public synchronized void selectItem(String code) {
+        currentState.selectItem(code);
+    }
+
+    public synchronized void dispense() {
+        currentState.dispense();
+    }
+
+    public void setState(VendingMachineState state) {
+        this.currentState = state;
+    }
+
+    public VendingMachineState getHasMoneyState() {
+        return hasMoneyState;
+    }
+
+    public VendingMachineState getDispensingState() {
+        return dispensingState;
+    }
+
+    public VendingMachineState getIdleState() {
+        return idleState;
     }
 
     public Inventory getInventory() {
         return inventory;
     }
 
-    public void setInventory(Inventory inventory) {
-        this.inventory = inventory;
+    public void addBalance(int amount) {
+        this.balance += amount;
     }
 
-    public List<Coin> getCoinList() {
-        return coinList;
+    public int getBalance() {
+        return balance;
     }
 
-    public void setCoinList(List<Coin> coinList) {
-        this.coinList = coinList;
+    public void setBalance(int balance) {
+        this.balance = balance;
+    }
+
+    public void setCurrentItem(Item item) {
+        this.currentItem = item;
+    }
+
+    public Item getCurrentItem() {
+        return currentItem;
     }
 }
+
 ```
 
----
-
-## ✅ `Main.java`
+#### 9. `VendingMachineDemo.java`
 
 ```java
-package com.lld.vendingmachine;
+package vendingmachine;
 
-import com.lld.vendingmachine.coin.Coin;
-import com.lld.vendingmachine.states.State;
-
-public class Main {
-
+public class VendingMachineDemo {
     public static void main(String[] args) {
+        VendingMachine machine = VendingMachine.getInstance();
 
-        VendingMachine vendingMachine = new VendingMachine();
+        // 1. Add Stock
+        Item coke = new Item("Coke", 25);
+        Item pepsi = new Item("Pepsi", 35);
+        machine.getInventory().addItem("Coke", coke, 5);
+        machine.getInventory().addItem("Pepsi", pepsi, 5);
 
-        // TEST 1: Exact Money
-        try {
-            System.out.println("\n|--- TEST 1: SUCCESSFUL PURCHASE (Exact Money) ---|");
+        // 2. Buy Coke
+        System.out.println("--- Transaction 1: Buy Coke ---");
+        machine.insertCoin(Coin.QUARTER);
+        machine.selectItem("Coke");
 
-            State state = vendingMachine.getCurrentState();
-            state.clickInsertCoinButton(vendingMachine);
-
-            state = vendingMachine.getCurrentState();
-            state.insertCoin(vendingMachine, Coin.DIME);   // 10
-            state.insertCoin(vendingMachine, Coin.DIME);   // 10
-            state.insertCoin(vendingMachine, Coin.NICKEL); // 5 total = 25
-
-            state.clickSelectProductButton(vendingMachine);
-
-            state = vendingMachine.getCurrentState();
-            state.selectProduct(vendingMachine, 101); // COKE 25
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // TEST 2: With Change
-        try {
-            System.out.println("\n|--- TEST 2: SUCCESSFUL PURCHASE (With Change) ---|");
-
-            State state = vendingMachine.getCurrentState();
-            state.clickInsertCoinButton(vendingMachine);
-
-            state = vendingMachine.getCurrentState();
-            state.insertCoin(vendingMachine, Coin.QUARTER); // 25
-            state.insertCoin(vendingMachine, Coin.QUARTER); // 25 total = 50
-
-            state.clickSelectProductButton(vendingMachine);
-
-            state = vendingMachine.getCurrentState();
-            state.selectProduct(vendingMachine, 102); // PEPSI 30 -> change 20
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // TEST 3: Insufficient Funds
-        try {
-            System.out.println("\n|--- TEST 3: INSUFFICIENT FUNDS ---|");
-
-            State state = vendingMachine.getCurrentState();
-            state.clickInsertCoinButton(vendingMachine);
-
-            state = vendingMachine.getCurrentState();
-            state.insertCoin(vendingMachine, Coin.DIME); // 10 only
-
-            state.clickSelectProductButton(vendingMachine);
-
-            state = vendingMachine.getCurrentState();
-            state.selectProduct(vendingMachine, 103); // JUICE 40
-
-        } catch (Exception e) {
-            System.out.println("Exception: " + e.getMessage());
-        }
+        // 3. Buy Pepsi with insufficient funds
+        System.out.println("\n--- Transaction 2: Insufficient Funds ---");
+        machine.insertCoin(Coin.QUARTER);
+        machine.selectItem("Pepsi");
+        machine.insertCoin(Coin.DIME);
+        machine.selectItem("Pepsi");
     }
 }
+
 ```
-
----
-
-# ✅ You can run it and you’ll see:
-
-* State transitions logs
-* Change coins returned
-* Stock decreases
-* Refund clears money
-
