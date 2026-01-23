@@ -1,53 +1,37 @@
-Sure ✅ Shubham — here is the **FULL WORKING CODE (Complete Project)** in the same folder structure, with all upgrades:
 
-✔ Different products + prices
-✔ Shelf quantity (stock)
-✔ Refund clears coinList
-✔ Change returned as `List<Coin>`
-✔ State Pattern clean flow
 
----
-
-# ✅ Folder Structure
+### **Directory Structure**
 
 ```text
-src/
-└── com/
-    └── lld/
+solutions/
+└── java/
+    └── src/
         └── vendingmachine/
-            ├── Main.java
-            ├── VendingMachine.java
-            │
-            ├── coin/
-            │   └── Coin.java
-            │
-            ├── inventory/
-            │   ├── Inventory.java
+            ├── model/                 <-- Data Entities
+            │   ├── Coin.java
             │   ├── Item.java
-            │   ├── ItemShelf.java
-            │   └── ProductType.java
-            │
-            ├── states/
-            │   ├── State.java
+            │   └── Inventory.java
+            ├── state/                 <-- State Pattern Logic
+            │   ├── VendingMachineState.java
             │   ├── IdleState.java
             │   ├── HasMoneyState.java
-            │   ├── SelectionState.java
-            │   └── DispenseState.java
-            │
-           
+            │   └── DispensingState.java
+            ├── service/               <-- Main Logic (Singleton)
+            │   └── VendingMachine.java
+            └── VendingMachineDemo.java <-- Driver Class
+
 ```
-
-
-
 
 ---
 
-### **Source Code Files**
+### **1. Folder: `model/**`
 
-#### 1. `Coin.java`
+*Contains the data objects and the inventory logic.*
+
+**File:** `src/vendingmachine/model/Coin.java`
 
 ```java
-package vendingmachine;
+package vendingmachine.model;
 
 public enum Coin {
     PENNY(1),
@@ -68,10 +52,10 @@ public enum Coin {
 
 ```
 
-#### 2. `Item.java`
+**File:** `src/vendingmachine/model/Item.java`
 
 ```java
-package vendingmachine;
+package vendingmachine.model;
 
 public class Item {
     private String name;
@@ -93,10 +77,10 @@ public class Item {
 
 ```
 
-#### 3. `Inventory.java`
+**File:** `src/vendingmachine/model/Inventory.java`
 
 ```java
-package vendingmachine;
+package vendingmachine.model;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -128,10 +112,18 @@ public class Inventory {
 
 ```
 
-#### 4. `VendingMachineState.java`
+---
+
+### **2. Folder: `state/**`
+
+*Contains the interface and implementations for the machine's behavior states.*
+
+**File:** `src/vendingmachine/state/VendingMachineState.java`
 
 ```java
-package vendingmachine;
+package vendingmachine.state;
+
+import vendingmachine.model.Coin;
 
 public interface VendingMachineState {
     void insertCoin(Coin coin);
@@ -142,10 +134,13 @@ public interface VendingMachineState {
 
 ```
 
-#### 5. `IdleState.java`
+**File:** `src/vendingmachine/state/IdleState.java`
 
 ```java
-package vendingmachine;
+package vendingmachine.state;
+
+import vendingmachine.model.Coin;
+import vendingmachine.service.VendingMachine;
 
 public class IdleState implements VendingMachineState {
     private VendingMachine machine;
@@ -179,10 +174,15 @@ public class IdleState implements VendingMachineState {
 
 ```
 
-#### 6. `HasMoneyState.java`
+**File:** `src/vendingmachine/state/HasMoneyState.java`
 
 ```java
-package vendingmachine;
+package vendingmachine.state;
+
+import vendingmachine.model.Coin;
+import vendingmachine.model.Inventory;
+import vendingmachine.model.Item;
+import vendingmachine.service.VendingMachine;
 
 public class HasMoneyState implements VendingMachineState {
     private VendingMachine machine;
@@ -231,10 +231,15 @@ public class HasMoneyState implements VendingMachineState {
 
 ```
 
-#### 7. `DispensingState.java`
+**File:** `src/vendingmachine/state/DispensingState.java`
 
 ```java
-package vendingmachine;
+package vendingmachine.state;
+
+import vendingmachine.model.Coin;
+import vendingmachine.model.Inventory;
+import vendingmachine.model.Item;
+import vendingmachine.service.VendingMachine;
 
 public class DispensingState implements VendingMachineState {
     private VendingMachine machine;
@@ -279,10 +284,21 @@ public class DispensingState implements VendingMachineState {
 
 ```
 
-#### 8. `VendingMachine.java`
+---
+
+### **3. Folder: `service/**`
+
+*Contains the Singleton Vending Machine controller.*
+
+**File:** `src/vendingmachine/service/VendingMachine.java`
 
 ```java
-package vendingmachine;
+package vendingmachine.service;
+
+import vendingmachine.model.Coin;
+import vendingmachine.model.Inventory;
+import vendingmachine.model.Item;
+import vendingmachine.state.*;
 
 public class VendingMachine {
     private static VendingMachine instance;
@@ -369,10 +385,20 @@ public class VendingMachine {
 
 ```
 
-#### 9. `VendingMachineDemo.java`
+---
+
+### **4. Root Folder**
+
+*Contains the main driver class.*
+
+**File:** `src/vendingmachine/VendingMachineDemo.java`
 
 ```java
 package vendingmachine;
+
+import vendingmachine.model.Coin;
+import vendingmachine.model.Item;
+import vendingmachine.service.VendingMachine;
 
 public class VendingMachineDemo {
     public static void main(String[] args) {
